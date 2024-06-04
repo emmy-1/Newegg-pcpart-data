@@ -51,3 +51,27 @@ def get_text(element):
         return element.strip()
     else:
         return element.text.strip() if element is not None else ""
+
+def extract_detail(soup, word):
+    # Find all table elements
+    tables = soup.find_all('table')
+
+    for table in tables:
+        # Find all tr elements in the table
+        rows = table.find_all('tr')
+
+        for row in rows:
+            # Find the th element in the row
+            th = row.find('th')
+
+            # If the th element was found and its text matches the word
+            if th and word in th.text:
+                # Find the td element in the row
+                td = row.find('td')
+
+                # If the td element was found, return its text
+                if td:
+                    return td.text.strip()
+
+    # If no matching th element was found, return None
+    return None
