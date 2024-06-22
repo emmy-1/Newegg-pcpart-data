@@ -7,6 +7,20 @@ import requests
 import pandas as pd
 from scraper_utils import extract_text, extract_link, get_html, extract_text_from_selector, get_text
 
+from airflow import DAG, task
+from datetime import datetime
+
+# Define the DAG
+Dag_agument = {
+    'owner': 'Emmanuel',
+    'email': 'eobayomi2@gmail.com',
+    'dag_id': 'NeweggGraphicCard',
+    'start_date': datetime(2024, 6, 22),
+    'retries': 2,
+    'schedule_interval': '@daily'
+}
+With DAG('etl_workflow', default_argss = Dag_agument) as etl_dag:
+
 def NeweggGraphicCard():
 # Create an empty DataFrame for storing graphic card details.
     Graphiccard = pd.DataFrame(columns=[
