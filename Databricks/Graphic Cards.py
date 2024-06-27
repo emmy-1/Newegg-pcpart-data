@@ -88,24 +88,31 @@ for page in range(1,8):
             get_html(Product_link)
             productsoup = BeautifulSoup(get_html(Product_link), 'html.parser')
 
-            # Attempt to find the rating element in the first place
-            rating_element = pc.find('i', class_='rating rating-5')
+            # List of possible class names for rating elements
+            rating_classes = ['rating rating-5', 'rating rating-4-5', 'rating rating-4', 'rating rating-3-5']
 
-            if rating_element:
+            # Initialize ratings to 'Null' by default
+            ratings = 'Null'
+
+            # Iterate through the list of class names
+            for rating_class in rating_classes:
+                # Attempt to find the rating element in the first place
+                rating_element = pc.find('i', class_=rating_class)
+    
+                if rating_element:
                 # Safely extract the rating value from the 'aria-label' attribute
-                aria_label = rating_element.get('aria-label', '')
-                ratings = aria_label.split(' ')[1] if len(aria_label.split(' ')) > 1 else 'Null'
-            else:
-                # If not found in the first place, check the second place for ratings
-                ratings_element = productsoup.find('i', class_='rating rating-5')
-                if ratings_element:
-                # Safely extract the rating from the 'title' attribute
+                    aria_label = rating_element.get('aria-label', '')
+                    ratings = aria_label.split(' ')[1] if len(aria_label.split(' ')) > 1 else 'Null'
+                    break  # Exit the loop once a rating is found
+                else:
+                    # If not found, check the second place for ratings
+                    ratings_element = productsoup.find('i', class_=rating_class)
+                    if ratings_element:
+                        # Safely extract the rating from the 'title' attribute
                         title = ratings_element.get('title', '')
                         ratings = title.split(' ')[1] if len(title.split(' ')) > 1 else 'Null'
-                else:
-                        # If not found in either place, set ratings to 'Null'
-                        ratings = 'Null'        
-          
+                        break  # Exit the loop once a rating is found        
+                    
             #price = productsoup.find('div', class_='price-current').text if productsoup.find('div', class_='price-current') else 'Null'
             brandname = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Brand', 0)
             Series = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Series', 0)
