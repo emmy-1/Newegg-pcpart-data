@@ -81,15 +81,32 @@ for page in range(1,8):
             model_no = pc.find('ul', class_='item-features').text if pc.find('ul', class_='item-features') else 'NA'
             No_rating = pc.find('a', class_='item-rating').text if pc.find('a', class_='item-rating') else 'NA'
             Product_link = pc.find('a', class_='item-title')['href']
-
+            price = pc.find('li', class_='price-current').text if pc.find('li',class_= 'price-current') else 'NA'
+            stickthrough_price = pc.find('span', class_='price-was-data').text if pc.find('span', class_='price-was-data') else 'NA'
+            # Extract Product information         
             # get the html link for the product
             get_html(Product_link)
             productsoup = BeautifulSoup(get_html(Product_link), 'html.parser')
 
-            # Extract Product information
-            ratings = productsoup.select_one('.rating')['title'] if productsoup.select_one('.rating') else 'Null'
-            price = productsoup.find('div', class_='price-current').text if productsoup.find('div', class_='price-current') else 'Null'
-            stickthrough_price = productsoup.find('span', class_='price-was-data').text if productsoup.find('span', class_='price-was-data') else 'NA'
+            # Attempt to find the rating element in the first place
+            rating_element = pc.find('i', class_='rating rating-5')
+
+            if rating_element:
+                # Safely extract the rating value from the 'aria-label' attribute
+                aria_label = rating_element.get('aria-label', '')
+                ratings = aria_label.split(' ')[1] if len(aria_label.split(' ')) > 1 else 'Null'
+            else:
+                # If not found in the first place, check the second place for ratings
+                ratings_element = productsoup.find('i', class_='rating rating-5')
+                if ratings_element:
+                # Safely extract the rating from the 'title' attribute
+                        title = ratings_element.get('title', '')
+                        ratings = title.split(' ')[1] if len(title.split(' ')) > 1 else 'Null'
+                else:
+                        # If not found in either place, set ratings to 'Null'
+                        ratings = 'Null'        
+          
+            #price = productsoup.find('div', class_='price-current').text if productsoup.find('div', class_='price-current') else 'Null'
             brandname = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Brand', 0)
             Series = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Series', 0)
             gpu_series = extract_value_from_specific_table(productsoup, 'table-horizontal', 'GPU Series', 2) 
@@ -102,11 +119,11 @@ for page in range(1,8):
             form_factor = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Form Factor', 7)
 
             print(f"Model_no: {model_no}")
-            print(f"Gpu_name: {Gpu_name}")
-            #print(f"Num_rating: {No_rating}")
-            #print(f"ratings: {ratings}")
-            #print(f"price: {price}")
-            #print(f"Stickthrough: {stickthrough_price}")
+            #print(f"Gpu_name: {Gpu_name}")
+            print(f"Num_rating: {No_rating}")
+            print(f"ratings: {ratings}")
+            print(f"price: {price}")
+            print(f"Stickthrough: {stickthrough_price}")
             #print(f"Brand: {brandname}")
             #print(f"Series: {Series}")
             #print(f"GPU Series: {gpu_series}")
