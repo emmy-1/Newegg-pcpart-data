@@ -65,12 +65,12 @@ def extract_value_from_specific_table(soup, table_class, target_th_text, table_i
 # COMMAND ----------
 
 from bs4 import BeautifulSoup
-for page in range(1,8):
+for page in range(1,9):
     page_size = 36  # Number of items per page
     if page == 1:
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/GPUs-Video-Graphics-Cards/SubCategory/ID-48')
     else:
-        html_ = get_html(f'https://www.newegg.com/global/uk-en/GPUs-Video-Graphics-Cards/SubCategory/ID-48/Page-{page}')
+        Html_ = get_html(f'https://www.newegg.com/global/uk-en/GPUs-Video-Graphics-Cards/SubCategory/ID-48/Page-{page}')
     Soup = BeautifulSoup(Html_,'html.parser')
 
     # Find all div elements with class 'item-cell'
@@ -120,28 +120,34 @@ for page in range(1,8):
             interface = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Interface', 1)
             Cpu_manfacturer = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Chipset Manufacturer', 2)
             Gpu = extract_value_from_specific_table(productsoup, 'table-horizontal', 'GPU', 2)
+
+
             core_clock = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Core Clock', 2)
+            if not core_clock:
+                core_clcok = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Core Clock', 2)
+
+
             boost_clock = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Boost Clock', 2)
             memorysize = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Memory Size', 3)
             form_factor = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Form Factor', 7)
 
             print(f"Model_no: {model_no}")
             #print(f"Gpu_name: {Gpu_name}")
-            print(f"Num_rating: {No_rating}")
-            print(f"ratings: {ratings}")
-            print(f"price: {price}")
-            print(f"Stickthrough: {stickthrough_price}")
-            #print(f"Brand: {brandname}")
-            #print(f"Series: {Series}")
-            #print(f"GPU Series: {gpu_series}")
-            #print(f"interface: {interface}")
-            #print(f"Chipset Manufacturer: {Cpu_manfacturer}")
-            #print(f"Gpu: {Gpu}")
+            #print(f"Num_rating: {No_rating}")
+            #print(f"ratings: {ratings}")
+            #print(f"price: {price}")
+            #print(f"Stickthrough: {stickthrough_price}")
+            print(f"Brand: {brandname}")
+            print(f"Series: {Series}")
+            print(f"GPU Series: {gpu_series}")
+            print(f"interface: {interface}")
+            print(f"Chipset Manufacturer: {Cpu_manfacturer}")
+            print(f"Gpu: {Gpu}")
             print(f"Product_link: {Product_link}")
-            #print(f"Core_clock: {core_clock}")
-            #print(f"Boost_clock: {boost_clock}")
-            #print(f"Memory Size: {memorysize}")
-            #print(f"formfactor: {form_factor}")
+            print(f"Core_clock: {core_clock}")
+            print(f"Boost_clock: {boost_clock}")
+            print(f"Memory Size: {memorysize}")
+            print(f"formfactor: {form_factor}")
             print("----------------------------")
 
         
