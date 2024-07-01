@@ -70,7 +70,7 @@ for page in range(1,9):
     if page == 1:
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/GPUs-Video-Graphics-Cards/SubCategory/ID-48')
     else:
-        Html_ = get_html(f'https://www.newegg.com/global/uk-en/GPUs-Video-Graphics-Cards/SubCategory/ID-48/Page-{page}')
+        html_ = get_html(f'https://www.newegg.com/global/uk-en/GPUs-Video-Graphics-Cards/SubCategory/ID-48/Page-{page}')
     Soup = BeautifulSoup(Html_,'html.parser')
 
     # Find all div elements with class 'item-cell'
@@ -122,12 +122,25 @@ for page in range(1,9):
             Gpu = extract_value_from_specific_table(productsoup, 'table-horizontal', 'GPU', 2)
 
 
-            core_clock = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Core Clock', 2)
-            if not core_clock:
-                core_clcok = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Core Clock', 2)
+            # Initialize Core_Clock and Boost_Clock with default values
+            Core_Clock = None
+            Boost_Clock = None
 
+            # Extract the core clock and boost clock from the product page
+            td_elements = productsoup.select('#product-details td')
 
-            boost_clock = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Boost Clock', 2)
+            # Find all the clock values in the product details
+            clocks = [td for td in td_elements if 'MHz' in td.text]
+            # Extract the core clock and boost clock values
+            if len(clocks) >= 2:
+                # Extract the clock values and find the maximum and minimum values
+                clock_values = [int(''.join(filter(str.isdigit, clock.text))) for clock in clocks]
+                max_clock_index = clock_values.index(max(clock_values))
+                min_clock_index = clock_values.index(min(clock_values))
+                # Assign the core clock and boost clock values
+                Boost_Clock = clocks[max_clock_index].text
+                Core_Clock = clocks[min_clock_index].text
+            #boost_clock = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Boost Clock', 2)
             memorysize = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Memory Size', 3)
             form_factor = extract_value_from_specific_table(productsoup, 'table-horizontal', 'Form Factor', 7)
 
@@ -144,103 +157,8 @@ for page in range(1,9):
             print(f"Chipset Manufacturer: {Cpu_manfacturer}")
             print(f"Gpu: {Gpu}")
             print(f"Product_link: {Product_link}")
-            print(f"Core_clock: {core_clock}")
-            print(f"Boost_clock: {boost_clock}")
+            print(f"Core_clock: {Core_Clock}")
+            print(f"Boost_clock: {Boost_Clock}")
             print(f"Memory Size: {memorysize}")
             print(f"formfactor: {form_factor}")
             print("----------------------------")
-
-        
-
-# COMMAND ----------
-
-from bs4 import BeautifulSoup
-
-def extract_text(element, tag, class_name, default=None):
-
-    """Extract text from an element using a tag and class name"""
-    found_element = element.find(tag, class_=class_name)
-    return found_element.text.strip() if found_element else default
-
-item_text = extract_text(Soup, 'a', 'item-title')
-display(item_text)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Define Functions
-# MAGIC
-
-# COMMAND ----------
-
-# Get HTML from a URL
-
-def get_html(url):
-    """Send a GET request to a URL and return the page content as a BeautifulSoup object
-    Args:
-        url (str): The URL to send the GET request 
-    """
-    html_request = requests.get(url).text
-    return BeautifulSoup(html_request, 'html')
-
-# Extract text from an element using a tag and class name
-def extract_text(element, tag, class_name, default=None):
-
-    """Extract text from an element using a tag and class name"""
-    found_element = element.find(tag, class_=class_name)
-    return found_element.text.strip() if found_element else default
-
-# extract href link from an element using a tag and class name
-def extract_link(element, tag, class_name, default=''):
-    """Extract the href link from an element using a tag and class name"""
-    found_element = element.find(tag, class_=class_name)
-    return found_element['href'] if found_element else default
-
-
-
-# COMMAND ----------
-
-def NeweggGraphics():
-    # Create an empty DataFrame for storing graphic card details.
-    Graphiccard = pd.DataFrame(columns=[
-        "Graphiccard", "Brand", "Ratings", "Price", "Model No", "Link","Series", "Interface", "Chipset", "GPU_Series", "GPU","Aritecture", "core_clock", "Boost_Clock", "Memory_Type", "review"
-    ])
-    # Loop through the pages of the website. The Graphic card page has a total of 7 pages which will be looped through.
-    for i in range(1, 8):
-        # Define the URL of the page. The page size is set to i because the page size changes for each page.
-        html_page = f'https://www.newegg.com/global/uk-en/GPUs-Video-Graphics-Cards/SubCategory/ID-48/Page-{i}/'
-        
-        # Send a GET request to the page and parse the page content with BeautifulSoup
-        soup = get_html(html_page)
-        # Find all graphic card items on the page as the loop continues
-        pc_part = soup.find_all('div', class_='item-cell')
-        print(pc_part)
-
-
-
-# COMMAND ----------
-
-
-        # Loop through each graphic card item
-        for pc in pc_part:
-            # Extract the necessary details from the item
-
-            # Extract the corresponding details from the page using the extract_text and extract_link functions, element and class name
-            Graphiccard_name = extract_text(pc, 'a', 'item-title')
-            model_no = extract_text(pc, 'ul', 'item-features')
-            ratings = extract_text(pc, 'span', 'item-rating-num', 'Null')
-            price = pc.find('li', class_='price-current')
-            strongprice = price.find('strong').text if price else 'Null'
-            link = extract_link(pc, 'a', 'item-title')
-
-            # Append the extracted details to the DataFrame
-            Graphiccard = Graphiccard.append({
-                "Graphiccard": Graphiccard_name.strip(),
-                "Ratings": ratings.strip(),
-                "Price": strongprice.strip(),
-                "Model No": model_no.strip(),
-                "Link": link
-            }, ignore_index=True)
-
-    # Display the DataFrame with the extracted details
-    display(Graphiccard)
