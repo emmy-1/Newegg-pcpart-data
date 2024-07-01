@@ -38,8 +38,6 @@ def get_html(url):
 
 # COMMAND ----------
 
-# COMMAND ----------
-
 from bs4 import BeautifulSoup
 for page in range(1,9):
     page_size = 36  # Number of items per page
@@ -88,11 +86,13 @@ for page in range(1,9):
                         # Safely extract the rating from the 'title' attribute
                         title = ratings_element.get('title', '')
                         ratings = title.split(' ')[1] if len(title.split(' ')) > 1 else 'Null'
-                        break  # Exit the loop once a rating is found          
-            print(f"Model_no: {model_no}")
-            print(f"Gpu_name: {Gpu_name}")
-            print(f"Num_rating: {No_rating}")
-            print(f"ratings: {ratings}")
-            print(f"price: {price}")
-            print(f"Stickthrough: {stickthrough_price}")
-            print(f"Product_link: {Product_link}")
+                        break  # Exit the loop once a rating is found
+
+                # Create a new row with the scraped data
+                new_row = spark.createDataFrame([(model_no, Gpu_name, No_rating, ratings, price, stickthrough_price, Product_link)], schema=data.schema)
+
+                # Append the new row to the existing DataFrame
+                data = data.union(new_row)
+
+# Write the DataFrame to a Delta Lake table
+data.write.format("delta").mode("append").saveAsTable("gpu_cards")  
