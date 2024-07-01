@@ -16,7 +16,7 @@
 # MAGIC     # - requests: For sending HTTP requests
 # MAGIC     # - pandas: For creating and manipulating DataFrames
 
-# COMMAND ----------
+# COMMAND -----------
 
 from bs4 import BeautifulSoup
 import requests
@@ -60,7 +60,6 @@ for page in range(1,9):
             stickthrough_price = pc.find('span', class_='price-was-data').text if pc.find('span', class_='price-was-data') else 'NA'
             # Extract Product information         
             # get the html link for the product
-            get_html(Product_link)
             productsoup = BeautifulSoup(get_html(Product_link), 'html.parser')
 
             # List of possible class names for rating elements

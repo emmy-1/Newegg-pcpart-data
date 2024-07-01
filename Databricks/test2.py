@@ -150,7 +150,7 @@ for page in range(1,9):
             #print(f"ratings: {ratings}")
             #print(f"price: {price}")
             #print(f"Stickthrough: {stickthrough_price}")
-            print(f"Brand: {brandname}")
+            print(f"Brand: {brandname.strip()}")
             print(f"Series: {Series}")
             print(f"GPU Series: {gpu_series}")
             print(f"interface: {interface}")

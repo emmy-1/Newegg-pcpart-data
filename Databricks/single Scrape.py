@@ -44,7 +44,7 @@ Html_ = get_html('https://www.newegg.com/global/uk-en/GPUs-Video-Graphics-Cards/
 Soup = BeautifulSoup(Html_,'html.parser')
 
 # Find all div elements with class 'item-cell'
-items = Soup.find_all('div', class_='item-cell')
+items = Soup.find('div', class_='item-cell')
 
 # COMMAND ----------
 
@@ -89,7 +89,7 @@ for pc in items:
 
     # Extract Product information
     ratings = productsoup.select_one('.rating')['title'] if productsoup.select_one('.rating') else 'Null'
-    price = productsoup.find('div', class_='price-current').text
+    price = productsoup.find('div', class_='price-current')
     stickthrough_price = productsoup.find('span', class_='price-was-data').text if productsoup.find('span', class_='price-was-data') else 'NA'
     brandname = extract_value_from_specific_table(productsoup,'table-horizontal','Brand',0)
     Series = extract_value_from_specific_table(productsoup,'table-horizontal','Series',0)
