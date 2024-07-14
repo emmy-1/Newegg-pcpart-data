@@ -16,7 +16,7 @@
 # MAGIC     # - requests: For sending HTTP requests
 # MAGIC     # - pandas: For creating and manipulating DataFrames
 
-# COMMAND -----------
+# COMMAND ----------
 
 from bs4 import BeautifulSoup
 import requests
