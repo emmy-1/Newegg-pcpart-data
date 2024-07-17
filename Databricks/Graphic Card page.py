@@ -17,13 +17,8 @@ def get_html(url):
 def find_element(html_page, element, class_name):
     return html_page.find(element, class_=class_name)
 
-
-for page in range(1, 5):
-    # if the page has no page number it's the first page.
-    if page == 1:
-        Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-343?diywishlist=0&isCompability=false')
-    else:
-        Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-343/Page-{page}?diywishlist=0&isCompability=false')
+    Html_= get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-48?isCompability=false')
+    
     # Create a BeautifulSoup object from the HTML content
     soup = BeautifulSoup(Html_, 'html.parser')
 
@@ -57,22 +52,19 @@ for page in range(1, 5):
                 label = div.text.strip()
                 value = span.text.strip()
 
-                if label == '# of Cores':
-                    cores = value
-                    print(f"# of Cores: {cores}")
-                elif label == 'Core Clock':
-                    clock_speed = value
-                    print(f"Core Clock: {clock_speed}")
+                if label == 'GPU':
+                    Gpu = value
+                    print(f"GPU: {Gpu}")
                 elif label == 'Memory':
-                    memory = value
-                    print(f"Memory Type: {memory}")
-                elif label == 'TDP':
-                    TDP = value
-                    print(f"TDP: {TDP}")
-                elif label == 'Integrated Graphics':
-                    Integrated_Graphics = value
-                    print(f"Integrated Graphics: {Integrated_Graphics}")
-
+                    Memory = value
+                    print(f"Memory: {Memory}")
+                elif label == 'Suggested PSU':
+                    PSU = value
+                    print(f"Suggested PSU: {PSU}")
+                elif label == 'Length':
+                    length = value
+                    print(f"length: {length}")
+              
             if rating_element is not None:
                 ratings = rating_element.text.strip()
                 print(f"Ratings: {ratings}")
@@ -91,3 +83,29 @@ for page in range(1, 5):
                 print('-----------------------------------')
     else:
         print("Table element not found on the page.")
+
+# COMMAND ----------
+
+from bs4 import BeautifulSoup
+import requests
+
+def get_html(url):
+    """Send a GET request to a URL and return the page content as a BeautifulSoup object
+    
+    Args:
+        url (str): The URL to send the GET request 
+        
+    Returns:
+        BeautifulSoup: The page content as a BeautifulSoup object
+    """
+    response = requests.get(url)
+    return response.content
+
+def find_element(html_page, element, class_name):
+    return html_page.find(element, class_=class_name)
+
+    Html_= get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-48?isCompability=false')
+    
+    # Create a BeautifulSoup object from the HTML content
+    soup = BeautifulSoup(Html_, 'html.parser')
+    print(soup)
