@@ -1,6 +1,11 @@
 # Databricks notebook source
 from bs4 import BeautifulSoup
 import requests
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType
+
+# Create SparkSession
+spark = SparkSession.builder.getOrCreate()
 
 def get_html(url):
     """Send a GET request to a URL and return the page content as a BeautifulSoup object
@@ -17,8 +22,23 @@ def get_html(url):
 def find_element(html_page, element, class_name):
     return html_page.find(element, class_=class_name)
 
+# Define the schema for the DataFrame
+schema = StructType([
+    StructField("Title", StringType(), True),
+    StructField("Link", StringType(), True),
+    StructField("GPU", StringType(), True),
+    StructField("Memory", StringType(), True),
+    StructField("Suggested PSU", StringType(), True),
+    StructField("Length", StringType(), True),
+    StructField("Ratings", StringType(), True),
+    StructField("Price", StringType(), True),
+    StructField("Image URL", StringType(), True),
+    StructField("Tips", StringType(), True)
+])
 
-for page in range(1, 14):
+data = []
+
+for page in range(1, 13):
     if page == 1:
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-48?diywishlist=0&isCompability=false')
     else:
@@ -31,54 +51,53 @@ for page in range(1, 14):
         td_elements = table.select('td')
 
         for td in td_elements:
-            item_data = {}  # Dictionary to store the data for each item
-
-            title = find_element(td, 'div', 'item-title')
-            if title is not None:
-                title_span = title.find('span')
-                if title_span is not None:
-                    item_data['Title'] = title_span.text.strip()
-                    link = title.find('a')
-                    if link is not None:
-                        item_data['Link'] = link['href']
-
             div = td.find('div', class_='hid-text')
             span = td.find('span')
+            title_div = td.find('div', class_='item-title')
+            tips = td.find('div', class_ = 'item-tips')
+            rating_element = td.find('span', class_='item-rating-num')
+            price = td.find('li', class_ ='price-current')
+            image = td.find('div', class_ = 'item-img hover-item-img')
+            link = None
+
+            if title_div is not None:
+                title_span = title_div.find('span')
+                if title_span is not None:
+                    title_value = title_span.text.strip()
+                    link = title_div.find('a')
+                    if link is not None:
+                        link = link['href']
+
             if div is not None and span is not None:
                 label = div.text.strip()
                 value = span.text.strip()
+
                 if label == 'GPU':
-                    item_data['GPU'] = value
+                    Gpu = value
                 elif label == 'Memory':
-                    item_data['Memory'] = value
+                    Memory = value
                 elif label == 'Suggested PSU':
-                    item_data['Suggested PSU'] = value
+                    PSU = value
                 elif label == 'Length':
-                    item_data['Length'] = value
-
-            rating_element = td.find('span', class_='item-rating-num')
+                    length = value
+              
             if rating_element is not None:
-                item_data['Ratings'] = rating_element.text.strip()
+                ratings = rating_element.text.strip()
 
-            price = td.find('li', class_='price-current')
             if price is not None:
-                item_data['Price'] = price.find('strong').text.strip()
+                price_value = price.find('strong').text.strip()
 
-            image = td.find('div', class_='item-img hover-item-img')
             if image is not None:
-                item_data['Image URL'] = image.find('img')['src']
+                image_url = image.find('img')['src']
 
-            tips = find_element(td, 'div', 'item-tips')
             if tips is not None:
-                item_data['Tips'] = tips.text.strip()
-                print('----------------------------')
+                tips_value = tips.text.strip()
+                
+            # Append the scraped data to the list
+            data.append((title_value, link, Gpu, Memory, PSU, length, ratings, price_value, image_url, tips_value))
 
-            # Print the data for each item
-            for key, value in item_data.items():
-                print(f"{key}: {value}")
-            print()
+# Create the DataFrame from the collected data
+data_df = spark.createDataFrame(data, schema=schema)
 
-# COMMAND ----------
-
-tablep= table.prettify()
-print(tablep)
+# Write the DataFrame to a CSV file
+data_df.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/GPU', header=True)

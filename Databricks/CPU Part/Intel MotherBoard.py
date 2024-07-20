@@ -1,6 +1,8 @@
 # Databricks notebook source
 from bs4 import BeautifulSoup
 import requests
+from pyspark.sql.types import StructType, StructField, StringType
+
 
 def get_html(url):
     """Send a GET request to a URL and return the page content as a BeautifulSoup object
@@ -17,6 +19,22 @@ def get_html(url):
 def find_element(html_page, element, class_name):
     return html_page.find(element, class_=class_name)
 
+# Define the schema for the DataFrame
+schema = StructType([
+    StructField("Title", StringType(), True),
+    StructField("Link", StringType(), True),
+    StructField("Socket / CPU", StringType(), True),
+    StructField("MemorySlots Type", StringType(), True),
+    StructField("Memory", StringType(), True),
+    StructField("TDP", StringType(), True),
+    StructField("Chipset", StringType(), True),
+    StructField("Ratings", StringType(), True),
+    StructField("Price", StringType(), True),
+    StructField("Image URL", StringType(), True),
+    StructField("Tips", StringType(), True)
+])
+
+data = []
 
 for page in range(1, 7):
     if page == 1:
@@ -24,7 +42,6 @@ for page in range(1, 7):
     else:
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-280/Page-{page}?diywishlist=0&isCompability=false')
 
-    
     soup = BeautifulSoup(Html_, 'html.parser')
     table = find_element(soup, 'table', 'table-vertical')
 
@@ -45,7 +62,6 @@ for page in range(1, 7):
                 title_span = title_div.find('span')
                 if title_span is not None:
                     title = title_span.text.strip()
-                print(f"Title: {title}")
 
             if div is not None and span is not None:
                 label = div.text.strip()
@@ -53,32 +69,36 @@ for page in range(1, 7):
 
                 if label == 'Socket / CPU':
                     Socket_cpu = value
-                    print(f"Socket / CPU: {Socket_cpu}")
+                    
                 elif label == 'Form Factor':
                     Form_Factor = value
-                    print(f"Form Factor: {Form_Factor}")
+                    
                 elif label == 'Memory Slots':
                     Memory_Slots = value
-                    print(f"MemorySlots Type: {Memory_Slots}")
+                    
                 elif label == 'Memory Max':
                     Memory_max = value
-                    print(f"TDP: {Memory_max}")
+                    
                 elif label == 'Chipset':
                     Chipset = value
-                    print(f"Chipset: {Chipset}")
+                    
             if rating_element is not None:
-                    ratings = rating_element.text.strip()
-                    print(f"Ratings: {ratings}")
+                ratings = rating_element.text.strip()
 
             if price is not None and price.find('strong') is not None:
                 price_value = price.find('strong').text.strip()
-                print(f"Price: {price_value}")
 
             if image is not None and image.find('img') is not None:
                 image_url = image.find('img')['src']
-                print(f"Image URL: {image_url}")
 
             if tips is not None:
                 tips_value = tips.text.strip()
-                print(f"Tips: {tips_value}")
-                print('-----------------------------------')
+    
+            # Append the data for each td element separately
+            data.append((title, link, Socket_cpu, Form_Factor, Memory_Slots, Memory_max, Chipset, ratings, price_value, image_url, tips_value))
+
+# Create the DataFrame from the collected data            
+data_df = spark.createDataFrame(data, schema=schema)
+
+# Write the DataFrame to a CSV file
+data_df.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/IntelMB', header=True)

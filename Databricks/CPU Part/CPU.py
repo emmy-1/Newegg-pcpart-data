@@ -1,6 +1,7 @@
 # Databricks notebook source
 from bs4 import BeautifulSoup
 import requests
+from pyspark.sql.types import StructType, StructField, StringType
 
 def get_html(url):
     """Send a GET request to a URL and return the page content as a BeautifulSoup object
@@ -17,6 +18,22 @@ def get_html(url):
 def find_element(html_page, element, class_name):
     return html_page.find(element, class_=class_name)
 
+# Define the schema for the DataFrame
+schema = StructType([
+    StructField("Title", StringType(), True),
+    StructField("Link", StringType(), True),
+    StructField("# of Cores", StringType(), True),
+    StructField("Core Clock", StringType(), True),
+    StructField("Memory", StringType(), True),
+    StructField("TDP", StringType(), True),
+    StructField("Integrated Graphics", StringType(), True),
+    StructField("Ratings", StringType(), True),
+    StructField("Price", StringType(), True),
+    StructField("Image URL", StringType(), True),
+    StructField("Tips", StringType(), True)
+])
+
+data = []
 
 for page in range(1, 5):
     # if the page has no page number it's the first page.
@@ -24,10 +41,7 @@ for page in range(1, 5):
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-343?diywishlist=0&isCompability=false')
     else:
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-343/Page-{page}?diywishlist=0&isCompability=false')
-    # Create a BeautifulSoup object from the HTML content
     soup = BeautifulSoup(Html_, 'html.parser')
-
-    # Find the table element with class 'table-vertical'
     table = find_element(soup, 'table', 'table-vertical')
     
     if table is not None:
@@ -47,47 +61,41 @@ for page in range(1, 5):
                 title_span = title_div.find('span')
                 if title_span is not None:
                     title_value = title_span.text.strip()
-                    print(f"Title: {title_value}")
                     link = title_div.find('a')
                     if link is not None:
                         link = link['href']
-                        print(f"Link: {link}")
+                        
 
             if div is not None and span is not None:
                 label = div.text.strip()
                 value = span.text.strip()
 
                 if label == '# of Cores':
-                    cores = value
-                    print(f"# of Cores: {cores}")
+                    cores = value   
                 elif label == 'Core Clock':
                     clock_speed = value
-                    print(f"Core Clock: {clock_speed}")
                 elif label == 'Memory':
                     memory = value
-                    print(f"Memory Type: {memory}")
                 elif label == 'TDP':
                     TDP = value
-                    print(f"TDP: {TDP}")
                 elif label == 'Integrated Graphics':
                     Integrated_Graphics = value
-                    print(f"Integrated Graphics: {Integrated_Graphics}")
+                    
 
             if rating_element is not None:
                 ratings = rating_element.text.strip()
-                print(f"Ratings: {ratings}")
-
             if price is not None:
                 price_value = price.find('strong').text.strip()
-                print(f"Price: {price_value}")
-
             if image is not None:
                 image_url = image.find('img')['src']
-                print(f"Image URL: {image_url}")
-
             if tips is not None:
                 tips_value = tips.text.strip()
-                print(f"Tips: {tips_value}")
-                print('-----------------------------------')
-    else:
-        print("Table element not found on the page.")
+
+            # Append the data for each td element separately
+            data.append((title_value, link, cores, memory, clock_speed, memory,  Integrated_Graphics, ratings, price_value, image_url, tips_value))
+
+# Create the DataFrame from the collected data            
+data_df = spark.createDataFrame(data, schema=schema)
+
+# Write the DataFrame to a CSV file
+data_df.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/CPU', header=True)

@@ -1,6 +1,7 @@
 # Databricks notebook source
 from bs4 import BeautifulSoup
 import requests
+from pyspark.sql.types import StructType, StructField, StringType
 
 def get_html(url):
     """Send a GET request to a URL and return the page content as a BeautifulSoup object
@@ -17,13 +18,28 @@ def get_html(url):
 def find_element(html_page, element, class_name):
     return html_page.find(element, class_=class_name)
 
-for page in range(1, 11):
+# Define the schema for the DataFrame
+schema = StructType([
+    StructField("Title", StringType(), True),
+    StructField("Capacity", StringType(), True),
+    StructField("RPM", StringType(), True),
+    StructField("Cache", StringType(), True),
+    StructField("Form factor", StringType(), True),
+    #StructField("interface", StringType(), True),
+    StructField("Ratings", StringType(), True),
+    StructField("Price", StringType(), True),
+    StructField("Image URL", StringType(), True),
+    StructField("Tips", StringType(), True)
+])
+
+data = []
+
+for page in range(1, 8):
     if page == 1:
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-14?diywishlist=0&isCompability=false')
     else:
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-14/Page-{page}?diywishlist=0&isCompability=false')
    
-
     soup = BeautifulSoup(Html_, 'html.parser')
     table = find_element(soup, 'table', 'table-vertical')
 
@@ -42,42 +58,38 @@ for page in range(1, 11):
             link = None
 
             if title_div is not None:
-                        title_span = title_div.find('span')
-                        if title_span is not None:
-                            title = title_span.text.strip()
-                        print(f"Title: {title}")
+                title_span = title_div.find('span')
+                if title_span is not None:
+                    title = title_span.text.strip()
 
             if div is not None and span is not None:
-                    label = div.text.strip()
-                    value = span.text.strip()
+                label = div.text.strip()
+                value = span.text.strip()
 
-                    if label == 'Capacity':
-                        Capacity = value
-                        print(f"Capacity: {Capacity}")
-                    elif label == 'Max Sequential Read':
-                        Max_Sequential_Read = value
-                        print(f"Max Sequential Read: { Max_Sequential_Read}")
-                    elif label == 'Max Sequential Write':
-                        Max_Sequential_Write = value
-                        print(f"Max Sequential Write: {Max_Sequential_Write}")
-                    elif label == 'Form Factor':
-                        Form_Factor = value
-                        print(f"TDP: { Form_Factor}")
+                if label == 'Capacity':
+                    Capacity = value
+                elif label == 'RPM':
+                    RPM = value
+                elif label == 'Cache':
+                    Cache = value
+                elif label == 'Form Factor':
+                    Form_Factor = value#.split(',')[0].strip()
+                # elif label == 'Interface':
+                #     interface = value
 
             if rating_element is not None:
-                    ratings = rating_element.text.strip()
-                    print(f"Ratings: {ratings}")
-
+                ratings = rating_element.text.strip() 
             if price is not None and price.find('strong') is not None:
                 price_value = price.find('strong').text.strip()
-                print(f"Price: {price_value}")
-
             if image is not None and image.find('img') is not None:
                 image_url = image.find('img')['src']
-                print(f"Image URL: {image_url}")
-
             if tips is not None:
                 tips_value = tips.text.strip()
-                print(f"Tips: {tips_value}")
-                print('-----------------------------------')
-                    
+            # Append the data for each td element separately
+            data.append((title, Capacity, RPM, Cache, Form_Factor, ratings, price_value, image_url, tips_value))
+
+# Create the DataFrame from the collected data            
+data_df = spark.createDataFrame(data, schema=schema)
+
+# Write the DataFrame to a CSV file
+data_df.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/HardDrive', header=True)

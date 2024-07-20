@@ -1,6 +1,26 @@
 # Databricks notebook source
 from bs4 import BeautifulSoup
 import requests
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType
+
+# Create SparkSession
+spark = SparkSession.builder.getOrCreate()
+
+# Define the schema for the DataFrame
+schema = StructType([
+    StructField("Title", StringType(), True),
+    StructField("Type", StringType(), True),
+    StructField("Color", StringType(), True),
+    StructField("LED", StringType(), True),
+    StructField("Case Material", StringType(), True),
+    StructField("Ratings", StringType(), True),
+    StructField("Price", StringType(), True),
+    StructField("Image URL", StringType(), True),
+    StructField("Tips", StringType(), True)
+])
+
+data = []
 
 def get_html(url):
     """Send a GET request to a URL and return the page content as a BeautifulSoup object
@@ -27,62 +47,59 @@ for page in range(1, 20):
     table = find_element(soup, 'table', 'table-vertical')
 
     if table is not None:
-            td_elements = table.select('td')
+        td_elements = table.select('td')
 
-            for td in td_elements:
-                div = td.find('div', class_='hid-text')
-                span = td.find('span')
-                rating_element = td.find('span', class_='item-rating-num')
-                title_div = td.find('div', class_='item-title')
-                tips = td.find('div', class_ = 'item-tips')
-                rating_element = td.find('span', class_='item-rating-num')
-                price = td.find('li', class_ ='price-current')
-                image = td.find('div', class_ = 'item-img hover-item-img')
-                link = None
-                
-                if title_div is not None:
-                        title_span = title_div.find('span')
-                        if title_span is not None:
-                            title = title_span.text.strip()
-                        print(f"Title: {title}")
+        for td in td_elements:
+            div = td.find('div', class_='hid-text')
+            span = td.find('span')
+            rating_element = td.find('span', class_='item-rating-num')
+            title_div = td.find('div', class_='item-title')
+            tips = td.find('div', class_ = 'item-tips')
+            rating_element = td.find('span', class_='item-rating-num')
+            price = td.find('li', class_ ='price-current')
+            image = td.find('div', class_ = 'item-img hover-item-img')
+            link = None
 
-                if div is not None and span is not None:
-                        label = div.text.strip()
-                        value = span.text.strip()
+            if title_div is not None:
+                title_span = title_div.find('span')
+                if title_span is not None:
+                    title = title_span.text.strip()
 
-                        if label == 'Type':
-                            Type = value
-                            print(f"Type: {Type}")
-                        elif label == 'Color':
-                            Color = value
-                            print(f"Color: { Color}")
-                        elif label == 'LED':
-                            LED = value
-                            print(f"LED: {LED}")
-                        elif label == 'Case Material':
-                            Case_Material = value
-                            print(f"Case Material: { Case_Material}")
-                if rating_element is not None:
-                        ratings = rating_element.text.strip()
-                        print(f"Ratings: {ratings}")
+            if div is not None and span is not None:
+                label = div.text.strip()
+                value = span.text.strip()
 
-                if price is not None and price.find('strong') is not None:
-                    price_value = price.find('strong').text.strip()
-                    print(f"Price: {price_value}")
+                if label == 'Type':
+                    Type = value
 
-                if image is not None and image.find('img') is not None:
-                    image_url = image.find('img')['src']
-                    print(f"Image URL: {image_url}")
+                elif label == 'Color':
+                    Color = value
 
-                if tips is not None:
-                    tips_value = tips.text.strip()
-                    print(f"Tips: {tips_value}")
-                    print('-----------------------------------')
-                        
+                elif label == 'LED':
+                    LED = value
 
+                elif label == 'Case Material':
+                    Case_Material = value
 
-        
+            if rating_element is not None:
+                ratings = rating_element.text.strip()
 
+            if price is not None and price.find('strong') is not None:
+                price_value = price.find('strong').text.strip()
+
+            if image is not None and image.find('img') is not None:
+                image_url = image.find('img')['src']
+
+            if tips is not None:
+                tips_value = tips.text.strip()
+
+            # Append the data to the list
+            data.append((title, Type, Color, LED, Case_Material, ratings, price_value, image_url, tips_value))
+
+# Create the DataFrame from the collected data
+data_df = spark.createDataFrame(data, schema=schema)
+# Write the DataFrame to a CSV file
+data_df.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/Case', header=True)
 
 # COMMAND ----------
 
