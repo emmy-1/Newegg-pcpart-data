@@ -48,8 +48,7 @@ for page in range(1, 5):
         td_elements = table.select('td')
 
         for td in td_elements:
-            div = td.find('div', class_='hid-text')
-            span = td.find('span')
+
             title_div = td.find('div', class_='item-title')
             tips = td.find('div', class_ = 'item-tips')
             rating_element = td.find('span', class_='item-rating-num')
@@ -65,7 +64,8 @@ for page in range(1, 5):
                     if link is not None:
                         link = link['href']
                         
-
+            div = td.find('div', class_='hid-text')
+            span = td.find('span')
             if div is not None and span is not None:
                 label = div.text.strip()
                 value = span.text.strip()

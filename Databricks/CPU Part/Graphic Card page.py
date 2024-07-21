@@ -38,6 +38,9 @@ schema = StructType([
 
 data = []
 
+# Initialize the variable Gpu
+
+
 for page in range(1, 13):
     if page == 1:
         Html_ = get_html(f'https://www.newegg.com/global/uk-en/tools/custom-pc-builder/pl/ID-48?diywishlist=0&isCompability=false')
@@ -51,8 +54,6 @@ for page in range(1, 13):
         td_elements = table.select('td')
 
         for td in td_elements:
-            div = td.find('div', class_='hid-text')
-            span = td.find('span')
             title_div = td.find('div', class_='item-title')
             tips = td.find('div', class_ = 'item-tips')
             rating_element = td.find('span', class_='item-rating-num')
@@ -68,19 +69,9 @@ for page in range(1, 13):
                     if link is not None:
                         link = link['href']
 
-            if div is not None and span is not None:
-                label = div.text.strip()
-                value = span.text.strip()
+            div = td.find('div', class_='hid-text')
+            span = td.find('span')
 
-                if label == 'GPU':
-                    Gpu = value
-                elif label == 'Memory':
-                    Memory = value
-                elif label == 'Suggested PSU':
-                    PSU = value
-                elif label == 'Length':
-                    length = value
-              
             if rating_element is not None:
                 ratings = rating_element.text.strip()
 
@@ -92,12 +83,33 @@ for page in range(1, 13):
 
             if tips is not None:
                 tips_value = tips.text.strip()
-                
-            # Append the scraped data to the list
-            data.append((title_value, link, Gpu, Memory, PSU, length, ratings, price_value, image_url, tips_value))
+
+            if div is not None and span is not None:
+                label = div.text.strip()
+                value = span.text.strip()
+
+                if label == 'GPU':
+                    Gpu = value
+                elif label == 'Memory':
+                    Memory = value
+                elif label == 'Suggested PSU':
+                    PSU = value
+                elif label == 'Length':
+                    length = value               
+                # Append the scraped data to the list
+                data.append((title_value, link, Gpu, Memory, PSU, length, ratings, price_value, image_url, tips_value))
 
 # Create the DataFrame from the collected data
 data_df = spark.createDataFrame(data, schema=schema)
-
 # Write the DataFrame to a CSV file
 data_df.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/GPU', header=True)
+fileName = dbutils.fs.ls('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/GPU')
+# create an empty string
+name = ''
+
+# find the csv file in the Raw/GPU file system
+for file in fileName:
+    if file.name.endswith('.csv'):
+        name = file.name
+# copy csv file if you see it
+dbutils.fs.cp('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/GPU/'+ name,'abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Bronz_layer/Gpu.csv' )
