@@ -36,10 +36,7 @@ schema = StructType([
     StructField("Tips", StringType(), True)
 ])
 
-data = []
-
-# Initialize the variable Gpu
-
+data = set()
 
 for page in range(1, 13):
     if page == 1:
@@ -69,9 +66,6 @@ for page in range(1, 13):
                     if link is not None:
                         link = link['href']
 
-            div = td.find('div', class_='hid-text')
-            span = td.find('span')
-
             if rating_element is not None:
                 ratings = rating_element.text.strip()
 
@@ -83,6 +77,9 @@ for page in range(1, 13):
 
             if tips is not None:
                 tips_value = tips.text.strip()
+
+            div = td.find('div', class_='hid-text')
+            span = td.find('span')
 
             if div is not None and span is not None:
                 label = div.text.strip()
@@ -96,11 +93,14 @@ for page in range(1, 13):
                     PSU = value
                 elif label == 'Length':
                     length = value               
-                # Append the scraped data to the list
-                data.append((title_value, link, Gpu, Memory, PSU, length, ratings, price_value, image_url, tips_value))
+                # Append the scraped data to the set
+            data.add((title_value, link, Gpu, Memory, PSU, length, ratings, price_value, image_url, tips_value))
+
+# Convert the set to a list
+data_list = list(data)
 
 # Create the DataFrame from the collected data
-data_df = spark.createDataFrame(data, schema=schema)
+data_df = spark.createDataFrame(data_list, schema=schema)
 # Write the DataFrame to a CSV file
 data_df.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/GPU', header=True)
 fileName = dbutils.fs.ls('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/GPU')
@@ -113,3 +113,9 @@ for file in fileName:
         name = file.name
 # copy csv file if you see it
 dbutils.fs.cp('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/GPU/'+ name,'abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Bronz_layer/Gpu.csv' )
+
+# COMMAND ----------
+
+# MAGIC %environment
+# MAGIC "client": "1"
+# MAGIC "base_environment": ""

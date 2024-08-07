@@ -40,11 +40,19 @@ def Run_pipline(table_name):
     extract_memory_no = extract_number(extract_tips_no, 'Memory')
     extract_PSU_no = extract_number(extract_memory_no, 'PSU')
     extract_Length_no = extract_number(extract_PSU_no, 'Length')
-    return extract_Length_no
+    Rename = extract_Length_no.withColumnRenamed('Image URL', 'ImageURL')
+    return Rename
 
 Result = Run_pipline('Gpu')
 Result.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/DLT_Bronze_layer/', header=True)
 
-# COMMAND ----------
+fileName = dbutils.fs.ls('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/DLT_Bronze_layer/')
+# create an empty string
+name = ''
 
-display(Result)
+# find the csv file in the Raw/GPU file system
+for file in fileName:
+    if file.name.endswith('.csv'):
+        name = file.name
+# copy csv file if you see it
+dbutils.fs.cp('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/DLT_Bronze_layer/'+ name,'abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/bronz/GraphicCard.csv' )

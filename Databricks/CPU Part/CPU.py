@@ -33,7 +33,7 @@ schema = StructType([
     StructField("Tips", StringType(), True)
 ])
 
-data = []
+data = set()
 
 for page in range(1, 5):
     # if the page has no page number it's the first page.
@@ -63,9 +63,19 @@ for page in range(1, 5):
                     link = title_div.find('a')
                     if link is not None:
                         link = link['href']
+
+            if rating_element is not None:
+                ratings = rating_element.text.strip()
+            if price is not None:
+                price_value = price.find('strong').text.strip()
+            if image is not None:
+                image_url = image.find('img')['src']
+            if tips is not None:
+                tips_value = tips.text.strip()
                         
             div = td.find('div', class_='hid-text')
             span = td.find('span')
+
             if div is not None and span is not None:
                 label = div.text.strip()
                 value = span.text.strip()
@@ -80,22 +90,18 @@ for page in range(1, 5):
                     TDP = value
                 elif label == 'Integrated Graphics':
                     Integrated_Graphics = value
-                    
-
-            if rating_element is not None:
-                ratings = rating_element.text.strip()
-            if price is not None:
-                price_value = price.find('strong').text.strip()
-            if image is not None:
-                image_url = image.find('img')['src']
-            if tips is not None:
-                tips_value = tips.text.strip()
-
-            # Append the data for each td element separately
-            data.append((title_value, link, cores, memory, clock_speed, memory,  Integrated_Graphics, ratings, price_value, image_url, tips_value))
+                # Append the data for each td element separately
+            data.add((title_value,link,cores,memory,clock_speed,memory,Integrated_Graphics,ratings,price_value,image_url,tips_value))
+data_list = list(data)
 
 # Create the DataFrame from the collected data            
-data_df = spark.createDataFrame(data, schema=schema)
+data_df = spark.createDataFrame(data_list, schema=schema)
 
 # Write the DataFrame to a CSV file
 data_df.coalesce(1).write.mode("overwrite").csv('abfss://pcpart@neweggdb.dfs.core.windows.net/Dataset/Raw/CPU', header=True)
+
+# COMMAND ----------
+
+# MAGIC %environment
+# MAGIC "client": "1"
+# MAGIC "base_environment": ""
